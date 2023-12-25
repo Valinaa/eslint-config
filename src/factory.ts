@@ -19,7 +19,6 @@ import {
   test,
   toml,
   typescript,
-  unicorn,
   unocss,
   vue,
   yaml,
@@ -98,7 +97,6 @@ export async function antfu(
     imports({
       stylistic: stylisticOptions,
     }),
-    unicorn(),
 
     // Optional plugins (installed but not enabled by default)
     perfectionist(),
