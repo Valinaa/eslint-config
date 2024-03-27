@@ -34,6 +34,26 @@ export async function vue(
 
   return [
     {
+      // This allows Vue plugin to work with auto imports
+      // https://github.com/vuejs/eslint-plugin-vue/pull/2422
+      languageOptions: {
+        globals: {
+          computed: 'readonly',
+          defineEmits: 'readonly',
+          defineExpose: 'readonly',
+          defineProps: 'readonly',
+          onMounted: 'readonly',
+          onUnmounted: 'readonly',
+          reactive: 'readonly',
+          ref: 'readonly',
+          shallowReactive: 'readonly',
+          shallowRef: 'readonly',
+          toRef: 'readonly',
+          toRefs: 'readonly',
+          watch: 'readonly',
+          watchEffect: 'readonly',
+        },
+      },
       name: 'antfu:vue:setup',
       plugins: {
         vue: pluginVue,
@@ -83,12 +103,14 @@ export async function vue(
             },
 
         'node/prefer-global/process': 'off',
-
         'vue/block-order': ['error', {
           order: ['script', 'template', 'style'],
         }],
+
         'vue/component-name-in-template-casing': ['error', 'PascalCase'],
         'vue/component-options-name-casing': ['error', 'PascalCase'],
+        // this is deprecated
+        'vue/component-tags-order': 'off',
         'vue/custom-event-name-casing': ['error', 'camelCase'],
         'vue/define-macros-order': ['error', {
           order: ['defineOptions', 'defineProps', 'defineEmits', 'defineSlots'],
@@ -102,7 +124,6 @@ export async function vue(
         'vue/multi-word-component-names': 'off',
         'vue/no-dupe-keys': 'off',
         'vue/no-empty-pattern': 'error',
-        'vue/no-extra-parens': ['error', 'functions'],
         'vue/no-irregular-whitespace': 'error',
         'vue/no-loss-of-precision': 'error',
         'vue/no-restricted-syntax': [

@@ -19,6 +19,8 @@ runWithConfig('js', {
 runWithConfig('all', {
   typescript: true,
   vue: true,
+  svelte: true,
+  astro: true,
 })
 runWithConfig('no-style', {
   typescript: true,
@@ -60,6 +62,7 @@ runWithConfig(
   {
     typescript: true,
     vue: true,
+    astro: true,
     formatters: true,
   },
 )

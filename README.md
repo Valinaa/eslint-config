@@ -4,14 +4,15 @@
 
 - Single quotes, no semi
 - Auto fix for formatting (aimed to be used standalone **without** Prettier)
+- Sorted imports, dangling commas
+- Reasonable defaults, best practices, only one line of config
 - Designed to work with TypeScript, JSX, Vue out-of-box
 - Lints also for json, yaml, toml, markdown
-- Sorted imports, dangling commas
-- Reasonable defaults, best practices, only one-line of config
 - Opinionated, but [very customizable](#customization)
 - [ESLint Flat config](https://eslint.org/docs/latest/use/configure/configuration-files-new), compose easily!
 - Using [ESLint Stylistic](https://github.com/eslint-stylistic/eslint-stylistic)
 - Respects `.gitignore` by default
+- Optional [React](#react), [Svelte](#svelte), [UnoCSS](#unocss), [Astro](#astro) support
 - Optional [formatters](#formatters) support for CSS, HTML, etc.
 - **Style principle**: Minimal for reading, stable for diff, consistent
 
@@ -20,45 +21,46 @@
 
 ## Usage
 
-### Install
+### Starter Wizard
+
+We provided a CLI tool to help you set up your project, or migrate from the legacy config to the new flat config with one command.
+
+```bash
+npx @antfu/eslint-config@latest
+```
+
+### Manual Install
+
+If you prefer to set up manually:
 
 ```bash
 pnpm i -D eslint @antfu/eslint-config
 ```
 
-### Create config file
-
-With [`"type": "module"`](https://nodejs.org/api/packages.html#type) in `package.json` (recommended):
+And create `eslint.config.mjs` in your project root:
 
 ```js
-// eslint.config.js
+// eslint.config.mjs
 import antfu from '@antfu/eslint-config'
 
 export default antfu()
 ```
 
-With CJS:
-
-```js
-// eslint.config.js
-const antfu = require('@antfu/eslint-config').default
-
-module.exports = antfu()
-```
-
-> [!TIP]
-> ESLint only detects `eslint.config.js` as the flat config entry, meaning you need to put `type: module` in your `package.json` or you have to use CJS in `eslint.config.js`. If you want explicit extension like `.mjs` or `.cjs`, or even `eslint.config.ts`, you can install [`eslint-ts-patch`](https://github.com/antfu/eslint-ts-patch) to fix it.
-
+<details>
+<summary>
 Combined with legacy config:
+</summary>
+
+If you still use some configs from the legacy eslintrc format, you can use the [`@eslint/eslintrc`](https://www.npmjs.com/package/@eslint/eslintrc) package to convert them to the flat config.
 
 ```js
-// eslint.config.js
-const antfu = require('@antfu/eslint-config').default
-const { FlatCompat } = require('@eslint/eslintrc')
+// eslint.config.mjs
+import antfu from '@antfu/eslint-config'
+import { FlatCompat } from '@eslint/eslintrc'
 
 const compat = new FlatCompat()
 
-module.exports = antfu(
+export default antfu(
   {
     ignores: [],
   },
@@ -77,6 +79,8 @@ module.exports = antfu(
 
 > Note that `.eslintignore` no longer works in Flat config, see [customization](#customization) for more details.
 
+</details>
+
 ### Add script for package.json
 
 For example:
@@ -90,17 +94,7 @@ For example:
 }
 ```
 
-### Migration
-
-We provided an experimental CLI tool to help you migrate from the legacy config to the new flat config.
-
-```bash
-npx @antfu/eslint-config@latest
-```
-
-Before running the migration, make sure to commit your unsaved changes first.
-
-## VS Code support (auto fix)
+## VS Code support (auto fix on save)
 
 Install [VS Code ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 
@@ -147,7 +141,9 @@ Add the following settings to your `.vscode/settings.json`:
     "json",
     "jsonc",
     "yaml",
-    "toml"
+    "toml",
+    "gql",
+    "graphql"
   ]
 }
 ```
@@ -191,7 +187,7 @@ export default antfu({
 
   // `.eslintignore` is no longer supported in Flat config, use `ignores` instead
   ignores: [
-    './fixtures',
+    '**/fixtures',
     // ...globs
   ]
 })
@@ -279,7 +275,7 @@ Since flat config requires us to explicitly provide the plugin names (instead of
 
 | New Prefix | Original Prefix        | Source Plugin                                                                              |
 | ---------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `import/*` | `i/*`                  | [eslint-plugin-i](https://github.com/un-es/eslint-plugin-i)                                |
+| `import/*` | `import-x/*`           | [eslint-plugin-import-x](https://github.com/un-es/eslint-plugin-import-x)                  |
 | `node/*`   | `n/*`                  | [eslint-plugin-n](https://github.com/eslint-community/eslint-plugin-n)                     |
 | `yaml/*`   | `yml/*`                | [eslint-plugin-yml](https://github.com/ota-meshi/eslint-plugin-yml)                        |
 | `ts/*`     | `@typescript-eslint/*` | [@typescript-eslint/eslint-plugin](https://github.com/typescript-eslint/typescript-eslint) |
@@ -295,6 +291,17 @@ When you want to override rules, or disable them inline, you need to update to t
 type foo = { bar: 2 }
 ```
 
+> [!NOTE]
+> About plugin renaming - it is actually rather a dangrous move that might leading to potential naming collisions, pointed out [here](https://github.com/eslint/eslint/discussions/17766) and [here](https://github.com/prettier/eslint-config-prettier#eslintconfigjs-flat-config-plugin-caveat). As this config also very **personal** and **opinionated**, I ambitiously position this config as the only **"top-level"** config per project, that might pivots the taste of how rules are named.
+>
+> This config cares more about the user-facings DX, and try to ease out the implementation details. For example, users could keep using the semantic `import/order` without ever knowing the underlying plugin has migrated twice to `eslint-plugin-i` and then to `eslint-plugin-import-x`. User are also not forced to migrate to the implicit `i/order` halfway only because we swapped the implementation to a fork.
+>
+> That said, it's probably still not a good idea. You might not want to doing this if you are maintaining your own eslint config.
+>
+> Feel free to open issues if you want to combine this config with some other config presets but faced naming collisions. I am happy to figure out a way to make them work. But at this moment I have no plan to revert the renaming.
+
+Since v2.9.0, this preset will automatically rename the plugins also for your custom configs. You can use the original prefix to override the rules directly.
+
 ### Rules Overrides
 
 Certain rules would only be enabled in specific files, for example, `ts/*` rules would only be enabled in `.ts` files and `vue/*` rules would only be enabled in `.vue` files. If you want to override the rules, you need to specify the file extension:
@@ -304,7 +311,10 @@ Certain rules would only be enabled in specific files, for example, `ts/*` rules
 import antfu from '@antfu/eslint-config'
 
 export default antfu(
-  { vue: true, typescript: true },
+  {
+    vue: true,
+    typescript: true
+  },
   {
     // Remember to specify the file glob here, otherwise it might cause the vue plugin to handle non-vue files
     files: ['**/*.vue'],
@@ -321,24 +331,58 @@ export default antfu(
 )
 ```
 
-We also provided an `overrides` options to make it easier:
+We also provided a `overrides` options in each integration to make it easier:
 
 ```js
 // eslint.config.js
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
-  overrides: {
-    vue: {
+  vue: {
+    overrides: {
       'vue/operator-linebreak': ['error', 'before'],
     },
-    typescript: {
+  },
+  typescript: {
+    overrides: {
       'ts/consistent-type-definitions': ['error', 'interface'],
     },
-    yaml: {},
-    // ...
-  }
+  },
+  yaml: {
+    overrides: {
+      // ...
+    },
+  },
 })
+```
+
+### Pipeline
+
+Since v2.10.0, the factory function `antfu()` returns a [pipeline object from `eslint-flat-config-utils`](https://github.com/antfu/eslint-flat-config-utils#pipe) where you can chain the methods to compose the config even more flexibly.
+
+```js
+// eslint.config.js
+import antfu from '@antfu/eslint-config'
+
+export default antfu()
+  .prepend(
+    // some configs before the main config
+  )
+  // overrides any named configs
+  .override(
+    'antfu:imports',
+    {
+      rules: {
+        'import/order': ['error', { 'newlines-between': 'always' }],
+      }
+    }
+  )
+  // rename plugin prefixes
+  .renamePlugins({
+    'old-prefix': 'new-prefix',
+    // ...
+  })
+// ...
 ```
 
 ### Optional Configs
@@ -346,9 +390,6 @@ export default antfu({
 We provide some optional configs for specific use cases, that we don't include their dependencies by default.
 
 #### Formatters
-
-> [!WARNING]
-> Experimental feature, changes might not follow semver.
 
 Use external formatters to format files that ESLint cannot handle yet (`.css`, `.html`, etc). Powered by [`eslint-plugin-format`](https://github.com/antfu/eslint-plugin-format).
 
@@ -403,6 +444,44 @@ Running `npx eslint` should prompt you to install the required dependencies, oth
 npm i -D eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-react-refresh
 ```
 
+#### Svelte
+
+To enable svelte support, you need to explicitly turn it on:
+
+```js
+// eslint.config.js
+import antfu from '@antfu/eslint-config'
+
+export default antfu({
+  svelte: true,
+})
+```
+
+Running `npx eslint` should prompt you to install the required dependencies, otherwise, you can install them manually:
+
+```bash
+npm i -D eslint-plugin-svelte
+```
+
+#### Astro
+
+To enable astro support, you need to explicitly turn it on:
+
+```js
+// eslint.config.js
+import antfu from '@antfu/eslint-config'
+
+export default antfu({
+  astro: true,
+})
+```
+
+Running `npx eslint` should prompt you to install the required dependencies, otherwise, you can install them manually:
+
+```bash
+npm i -D eslint-plugin-astro
+```
+
 #### UnoCSS
 
 To enable UnoCSS support, you need to explicitly turn it on:
@@ -424,13 +503,13 @@ npm i -D @unocss/eslint-plugin
 
 ### Optional Rules
 
-This config also provides some optional plugins/rules for extended usages.
+This config also provides some optional plugins/rules for extended usage.
 
 #### `perfectionist` (sorting)
 
-This plugin [`eslint-plugin-perfectionist`](https://github.com/azat-io/eslint-plugin-perfectionist) allows you to sorted object keys, imports, etc, with auto-fix.
+This plugin [`eslint-plugin-perfectionist`](https://github.com/azat-io/eslint-plugin-perfectionist) allows you to sort object keys, imports, etc, with auto-fix.
 
-The plugin is installed but no rules are enabled by default.
+The plugin is installed, but no rules are enabled by default.
 
 It's recommended to opt-in on each file individually using [configuration comments](https://eslint.org/docs/latest/use/configure/rules#using-configuration-comments-1).
 
@@ -441,7 +520,6 @@ const objectWantedToSort = {
   b: 1,
   c: 3,
 }
-/* eslint perfectionist/sort-objects: "off" */
 ```
 
 ### Type Aware Rules
@@ -456,6 +534,21 @@ export default antfu({
   typescript: {
     tsconfigPath: 'tsconfig.json',
   },
+})
+```
+
+### Editor Specific Disables
+
+Some rules are disabled when inside ESLint IDE integrations, namely [`unused-imports/no-unused-imports`](https://www.npmjs.com/package/eslint-plugin-unused-imports) [`test/no-only-tests`](https://github.com/levibuzolic/eslint-plugin-no-only-tests)
+
+This is to prevent unused imports from getting removed by the IDE during refactoring to get a better developer experience. Those rules will be applied when you run ESLint in the terminal or [Lint Staged](#lint-staged). If you don't want this behavior, you can disable them:
+
+```js
+// eslint.config.js
+import antfu from '@antfu/eslint-config'
+
+export default antfu({
+  isInEditor: false
 })
 ```
 
@@ -478,6 +571,9 @@ and then
 
 ```bash
 npm i -D lint-staged simple-git-hooks
+
+// to active the hooks
+npx simple-git-hooks
 ```
 
 ## View what rules are enabled
