@@ -1,6 +1,12 @@
-// @ts-expect-error missing types
+// @ts-check
 import styleMigrate from '@stylistic/eslint-plugin-migrate'
-import antfu from './src'
+import JITI from 'jiti'
+
+const jiti = JITI(import.meta.url)
+/**
+ * @type {import('./src').default}
+ */
+const antfu = jiti('./src').default
 
 export default antfu(
   {
